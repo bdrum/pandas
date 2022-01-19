@@ -655,7 +655,17 @@ class SparseArray(OpsMixin, PandasObject, ExtensionArray):
 
     @fill_value.setter
     def fill_value(self, value):
+        if isinstance(self.sp_index, BlockIndex):
+            msg = (
+                "fill_value could be changed only for integer indices."
+                "Not for Block indices."
+            )
+            raise ValueError(msg)
+
         self._dtype = SparseDtype(self.dtype.subtype, value)
+        new_zero_elements_pos = np.where(self.sp_values == value)[0]
+        new_indices = np.delete(self.sp_index.indices, new_zero_elements_pos)
+        self._sparse_index = IntIndex(len(self), new_indices)
 
     @property
     def kind(self) -> SparseIndexKind:

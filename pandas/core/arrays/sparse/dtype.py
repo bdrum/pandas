@@ -83,6 +83,10 @@ class SparseDtype(ExtensionDtype):
 
     def __init__(self, dtype: Dtype = np.float64, fill_value: Any = None):
 
+        if not is_scalar(fill_value):
+            msg = f"fill_value must be a scalar. Has got {fill_value} instead"
+            raise ValueError(msg)
+
         if isinstance(dtype, type(self)):
             if fill_value is None:
                 fill_value = dtype.fill_value
@@ -96,8 +100,18 @@ class SparseDtype(ExtensionDtype):
             fill_value = na_value_for_dtype(dtype)
 
         self._dtype = dtype
+
+        if type(fill_value) != dtype and not isna(fill_value) and fill_value != 0:
+            msg = (
+                f"Can not set fill_value as {fill_value}."
+                "The type of assigned value "
+                f"should be either the same as in array {dtype} "
+                "or be an NA."
+                f"Type {type(fill_value)} has got."
+            )
+            raise ValueError(msg)
+
         self._fill_value = fill_value
-        self._check_fill_value()
 
     def __hash__(self):
         # Python3 doesn't inherit __hash__ when a base class overrides
@@ -147,24 +161,6 @@ class SparseDtype(ExtensionDtype):
            ``SparseArray.fill_value`` directly.
         """
         return self._fill_value
-
-    def _check_fill_value(self):
-        if not is_scalar(self._fill_value):
-            raise ValueError(
-                f"fill_value must be a scalar. Got {self._fill_value} instead"
-            )
-        # TODO: Right now we can use Sparse boolean array
-        #       with any fill_value. Here was an attempt
-        #       to allow only 3 value: True, False or nan
-        #       but plenty test has failed.
-        # see pull 44955
-        # if self._is_boolean and not (
-        #    is_bool(self._fill_value) or isna(self._fill_value)
-        # ):
-        #    raise ValueError(
-        #        "fill_value must be True, False or nan "
-        #        f"for boolean type. Got {self._fill_value} instead"
-        #    )
 
     @property
     def _is_na_fill_value(self) -> bool:

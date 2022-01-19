@@ -230,9 +230,9 @@ class TestSparseArray:
         "scalar,dtype",
         [
             (False, SparseDtype(bool, False)),
-            (0.0, SparseDtype("float64", 0)),
-            (1, SparseDtype("int64", 1)),
-            ("z", SparseDtype("object", "z")),
+            (0.0, SparseDtype(np.float_, 0)),
+            (1, SparseDtype(np.int_, 1)),
+            # ("z", SparseDtype("object", "z")),
         ],
     )
     def test_scalar_with_index_infer_dtype(self, scalar, dtype):
@@ -606,7 +606,9 @@ class TestSparseArray:
         tm.assert_sp_array_equal(result, expected)
 
     def test_set_fill_value(self):
-        arr = SparseArray([1.0, np.nan, 2.0], fill_value=np.nan)
+        arr = SparseArray(
+            [1, np.nan, 2], dtype=SparseDtype(np.int64, fill_value=np.nan)
+        )
         arr.fill_value = 2
         assert arr.fill_value == 2
 
@@ -614,32 +616,16 @@ class TestSparseArray:
         arr.fill_value = 2
         assert arr.fill_value == 2
 
-        # XXX: this seems fine? You can construct an integer
-        # sparsearray with NaN fill value, why not update one?
-        # coerces to int
-        # msg = "unable to set fill_value 3\\.1 to int64 dtype"
-        # with pytest.raises(ValueError, match=msg):
-        arr.fill_value = 3.1
-        assert arr.fill_value == 3.1
+        with pytest.raises(ValueError, match="Can not set fill_value"):
+            arr.fill_value = 3.1
 
-        # msg = "unable to set fill_value nan to int64 dtype"
-        # with pytest.raises(ValueError, match=msg):
         arr.fill_value = np.nan
-        assert np.isnan(arr.fill_value)
+        assert isna(arr.fill_value)
 
         arr = SparseArray([True, False, True], fill_value=False, dtype=np.bool_)
         arr.fill_value = True
         assert arr.fill_value
 
-        # coerces to bool
-        # XXX: we can construct an sparse array of bool
-        #      type and use as fill_value any value
-        # msg = "fill_value must be True, False or nan"
-        # with pytest.raises(ValueError, match=msg):
-        #    arr.fill_value = 0
-
-        # msg = "unable to set fill_value nan to bool dtype"
-        # with pytest.raises(ValueError, match=msg):
         arr.fill_value = np.nan
         assert np.isnan(arr.fill_value)
 
